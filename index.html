@@ -57,6 +57,35 @@ table{width:100%;border-collapse:collapse;white-space:nowrap}
 th,td{padding:12px;text-align:right;border-bottom:1px solid var(--border)}
 th{color:var(--muted)}
 #status{overflow-wrap:anywhere}
+.stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.stat-card,.chart-card{min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px}
+.stat-card span,.stat-card small{display:block;color:var(--muted);font-size:13px;line-height:1.8}
+.stat-card strong{display:block;font-size:clamp(23px,4vw,32px);margin:9px 0;overflow-wrap:anywhere}
+.dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.dashboard-toolbar p{margin:4px 0}
+.chart-card{margin-top:16px}
+.activity-chart{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:end;min-height:190px;margin-top:18px;padding:12px 0 0;border-bottom:1px solid var(--border)}
+.month-column{height:175px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0}
+.month-bars{height:135px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:4px}
+.month-bar{width:min(35%,22px);min-height:3px;border-radius:5px 5px 0 0;position:relative}
+.month-bar.orders{background:#8172ff}
+.month-bar.messages{background:#22b8a8}
+.month-label{font-size:11px;color:var(--muted);white-space:nowrap}
+.month-values{font-size:10px;color:var(--muted);direction:ltr}
+.chart-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+.chart-legend span{display:flex;align-items:center;gap:6px}
+.chart-legend i{display:inline-block;width:10px;height:10px;border-radius:3px}
+.legend-orders{background:#8172ff}.legend-messages{background:#22b8a8}
+.orders-toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px);gap:10px;margin:12px 0}
+.orders-summary{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.orders-summary span{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:13px}
+.status-select{min-width:135px;width:auto;margin:0;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:9px}
+.order-description{white-space:normal;min-width:180px;max-width:300px;overflow-wrap:anywhere;line-height:1.8}
+.order-action{white-space:nowrap}
+.message-text{white-space:normal;min-width:220px;max-width:380px;overflow-wrap:anywhere;line-height:1.8}
+.message-actions{white-space:nowrap}
+.message-read{display:inline-block;padding:5px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:12px}
+@media(max-width:700px){.orders-toolbar{grid-template-columns:1fr}.status-select{min-width:125px}.order-description{min-width:160px}}
 @media(max-width:700px){
   header{padding:12px;align-items:flex-start;flex-wrap:wrap}
   header > div:last-child{width:100%;}
@@ -65,6 +94,16 @@ th{color:var(--muted)}
   main{width:100%;max-width:100%;margin:16px auto;padding:0 10px}
   .layout{grid-template-columns:minmax(0,1fr);gap:12px}
   .card{min-width:0;padding:14px;border-radius:13px}
+  .stats-grid{grid-template-columns:1fr;gap:9px}
+  .stat-card{padding:12px}
+  .stat-card strong{font-size:26px}
+  .dashboard-toolbar{align-items:stretch}
+  .dashboard-toolbar button{width:100%}
+  .activity-chart{gap:4px;min-height:170px}
+  .month-column{height:155px}
+  .month-bars{height:115px;gap:3px}
+  .month-label{font-size:10px}
+  .month-values{font-size:9px}
   input,button{font-size:16px}
   nav button{width:100%;min-height:44px}
   .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -116,6 +155,25 @@ th{color:var(--muted)}
       <section class="card">
         <h2 id="pageTitle">نمای کلی</h2>
         <p id="pageInfo" class="muted">به پنل مدیریت خوش آمدی.</p>
+
+        <section id="homePanel" aria-label="آمار کلی">
+          <div class="stats-grid">
+            <article class="stat-card"><span>کاربران ثبت‌نام‌شده</span><strong id="statUsers">—</strong><small id="statUsersNote">در انتظار دریافت</small></article>
+            <article class="stat-card"><span>کل سفارش‌ها</span><strong id="statOrders">—</strong><small id="statOrdersNote">در انتظار دریافت</small></article>
+            <article class="stat-card"><span>کل پیام‌ها</span><strong id="statMessages">—</strong><small id="statMessagesNote">در انتظار دریافت</small></article>
+          </div>
+          <div class="dashboard-toolbar">
+            <p id="dashboardStatus" class="muted" aria-live="polite">برای مشاهده آمار، در حال اتصال به پایگاه داده...</p>
+            <button id="refreshDashboard" type="button">🔄 تازه‌سازی آمار</button>
+          </div>
+          <div class="chart-card">
+            <h3>فعالیت شش ماه اخیر</h3>
+            <p class="muted">تعداد سفارش‌ها و پیام‌های ثبت‌شده در هر ماه، بر اساس اطلاعات موجود در پایگاه داده.</p>
+            <div id="activityChart" class="activity-chart" role="img" aria-label="نمودار فعالیت شش ماه اخیر"></div>
+            <div class="chart-legend"><span><i class="legend-orders"></i> سفارش‌ها</span><span><i class="legend-messages"></i> پیام‌ها</span></div>
+          </div>
+        </section>
+
         <div id="usersPanel" class="hidden">
           <input id="userSearch" type="search" placeholder="جست‌وجو بر اساس نام یا ایمیل" aria-label="جست‌وجوی کاربران">
           <button id="refreshUsers" type="button">تازه‌سازی فهرست</button>
@@ -128,6 +186,64 @@ th{color:var(--muted)}
               <tbody id="usersBody"></tbody>
             </table>
           </div>
+        </div>
+
+        <div id="ordersPanel" class="hidden">
+          <div class="orders-toolbar">
+            <input id="orderSearch" type="search" placeholder="جست‌وجوی کد، نام، تماس یا شرح سفارش" aria-label="جست‌وجوی سفارش‌ها">
+            <select id="orderFilter" aria-label="فیلتر وضعیت سفارش" class="status-select">
+              <option value="all">همه وضعیت‌ها</option>
+              <option value="new">جدید</option>
+              <option value="doing">در حال انجام</option>
+              <option value="done">تکمیل‌شده</option>
+            </select>
+          </div>
+          <div class="dashboard-toolbar"><p id="ordersStatus" class="muted" aria-live="polite">برای دریافت سفارش‌ها، تازه‌سازی را بزن.</p><button id="refreshOrders" type="button">🔄 تازه‌سازی سفارش‌ها</button></div>
+          <div id="ordersSummary" class="orders-summary"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>کد پیگیری</th><th>نوع سفارش</th><th>نام</th><th>راه ارتباطی</th><th>شرح سفارش</th><th>تاریخ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+              <tbody id="ordersBody"></tbody>
+            </table>
+          </div>
+          <p class="muted">تغییر وضعیت فقط زمانی ذخیره می‌شود که مجوز UPDATE در سیاست‌های RLS جدول orders برای مدیر تنظیم شده باشد.</p>
+        </div>
+
+        <div id="messagesPanel" class="hidden">
+          <div class="orders-toolbar">
+            <input id="messageSearch" type="search" placeholder="جست‌وجو در نام، ایمیل، موضوع یا متن پیام" aria-label="جست‌وجوی پیام‌ها">
+            <select id="messageFilter" aria-label="فیلتر خوانده‌شدن پیام‌ها" class="status-select">
+              <option value="all">همه پیام‌ها</option>
+              <option value="unread">خوانده‌نشده</option>
+              <option value="read">خوانده‌شده</option>
+            </select>
+          </div>
+          <div class="dashboard-toolbar"><p id="messagesStatus" class="muted" aria-live="polite">برای دریافت پیام‌ها، تازه‌سازی را بزن.</p><button id="refreshMessages" type="button">🔄 تازه‌سازی پیام‌ها</button></div>
+          <div id="messagesSummary" class="orders-summary"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>نام</th><th>ایمیل</th><th>موضوع</th><th>متن پیام</th><th>تاریخ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+              <tbody id="messagesBody"></tbody>
+            </table>
+          </div>
+          <p class="muted">این بخش جدول messages را می‌خواند. علامت‌گذاری به‌عنوان خوانده‌شده فقط وقتی فعال می‌شود که جدول، ستون is_read یا read داشته باشد و مجوز UPDATE مدیر در RLS تنظیم شده باشد.</p>
+        </div>
+
+        <div id="settingsPanel" class="hidden">
+          <h3>تنظیمات پنل</h3>
+          <div class="card" style="margin:12px 0;background:var(--bg)">
+            <h4>ظاهر پنل</h4>
+            <p class="muted">حالت نمایش دلخواهت را انتخاب کن. انتخاب در همین مرورگر ذخیره می‌شود.</p>
+            <button type="button" class="secondary" id="darkModeSetting">🌙 حالت تیره</button>
+            <button type="button" class="secondary" id="lightModeSetting">☀️ حالت روشن</button>
+            <p id="themeStatus" class="muted" aria-live="polite"></p>
+          </div>
+          <div class="card" style="margin:12px 0;background:var(--bg)">
+            <h4>وضعیت اتصال</h4>
+            <p id="connectionSetting" class="muted">اتصال پایگاه داده از طریق Supabase انجام می‌شود.</p>
+            <button type="button" id="testConnectionBtn">🔄 بررسی اتصال</button>
+          </div>
+          <p class="muted">برای امنیت، اطلاعات محرمانه و کلید service_role نباید در این پنل یا مرورگر ذخیره شود.</p>
         </div>
       </section>
     </div>
@@ -148,7 +264,12 @@ const SUPABASE_KEY = "sb_publishable_kPYB9r27zwqmJYRDYBMb_A_YR-2a2PX";
 
 const $ = id => document.getElementById(id);
 let currentUsers = [];
+let currentOrders = [];
+let currentMessages = [];
+let messagesLoading = false;
 let loginInProgress = false;
+let dashboardLoading = false;
+let ordersLoading = false;
 
 function setStatus(message) {
   $("status").textContent = message;
@@ -238,6 +359,7 @@ async function login(event) {
       await verifyAdmin(data.user);
       showApp(data.user);
       setStatus("");
+      await navigate("home");
     } catch (err) {
       await db.auth.signOut();
       throw err;
@@ -295,12 +417,303 @@ function renderUsers() {
   }
 }
 
+
+async function loadOrders() {
+  if (!db || ordersLoading) return;
+  ordersLoading = true;
+  $("refreshOrders").disabled = true;
+  $("ordersStatus").textContent = "در حال دریافت سفارش‌ها از Supabase...";
+  $("ordersBody").replaceChildren();
+  try {
+    const {data, error} = await db.from("orders").select("*").order("created_at", {ascending:false}).limit(500);
+    if (error) throw error;
+    currentOrders = Array.isArray(data) ? data : [];
+    renderOrders();
+    $("ordersStatus").textContent = `تعداد سفارش‌های دریافت‌شده: ${currentOrders.length}`;
+  } catch (err) {
+    console.error("loadOrders:", err);
+    currentOrders = [];
+    renderOrders();
+    $("ordersStatus").textContent = "خطا در دریافت سفارش‌ها: " + (err.message || "خطای نامشخص") + " — جدول orders و مجوز SELECT مدیر را در Supabase بررسی کن.";
+  } finally {
+    ordersLoading = false;
+    $("refreshOrders").disabled = false;
+  }
+}
+
+function statusLabel(status) {
+  return ({new:"جدید", doing:"در حال انجام", done:"تکمیل‌شده"})[status] || (status || "نامشخص");
+}
+
+function renderOrders() {
+  if (!$("ordersBody")) return;
+  const q = $("orderSearch").value.trim().toLocaleLowerCase("fa");
+  const filter = $("orderFilter").value;
+  const filtered = currentOrders.filter(order => {
+    const status = order.status || "new";
+    const matchesStatus = filter === "all" || status === filter;
+    const haystack = [order.order_code, order.service, order.name, order.contact, order.description, statusLabel(status)].map(x => String(x || "")).join(" ").toLocaleLowerCase("fa");
+    return matchesStatus && haystack.includes(q);
+  });
+  const counts = {new:0, doing:0, done:0};
+  currentOrders.forEach(order => { const status = order.status || "new"; if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status]++; });
+  $("ordersSummary").innerHTML = `<span>کل: ${currentOrders.length.toLocaleString("fa-IR")}</span><span>جدید: ${counts.new.toLocaleString("fa-IR")}</span><span>در حال انجام: ${counts.doing.toLocaleString("fa-IR")}</span><span>تکمیل‌شده: ${counts.done.toLocaleString("fa-IR")}</span>`;
+  $("ordersBody").innerHTML = filtered.map(order => {
+    const id = order.id;
+    const status = order.status || "new";
+    const canUpdate = id !== undefined && id !== null && id !== "";
+    return `<tr>
+      <td>${escapeHTML(order.order_code || "ثبت نشده")}</td>
+      <td>${escapeHTML(order.service || "—")}</td>
+      <td>${escapeHTML(order.name || "—")}</td>
+      <td>${escapeHTML(order.contact || "—")}</td>
+      <td class="order-description">${escapeHTML(order.description || "—")}</td>
+      <td>${escapeHTML(formatDate(order.created_at))}</td>
+      <td><select class="status-select" data-order-status="${escapeHTML(id ?? "")}" ${canUpdate ? "" : "disabled"} aria-label="تغییر وضعیت سفارش ${escapeHTML(order.order_code || id || "")}">
+        <option value="new" ${status === "new" ? "selected" : ""}>جدید</option>
+        <option value="doing" ${status === "doing" ? "selected" : ""}>در حال انجام</option>
+        <option value="done" ${status === "done" ? "selected" : ""}>تکمیل‌شده</option>
+      </select></td>
+      <td class="order-action"><button type="button" class="secondary" data-save-order="${escapeHTML(id ?? "")}" ${canUpdate ? "" : "disabled"}>ذخیره وضعیت</button></td>
+    </tr>`;
+  }).join("");
+  if (!filtered.length) $("ordersBody").innerHTML = `<tr><td colspan="8">${currentOrders.length ? "سفارشی با این جست‌وجو یا فیلتر پیدا نشد." : "هنوز سفارشی دریافت نشده است؛ اگر سفارش ثبت شده، دسترسی جدول orders را بررسی کن."}</td></tr>`;
+}
+
+async function saveOrderStatus(id) {
+  const select = document.querySelector(`[data-order-status="${CSS.escape(String(id))}"]`);
+  const button = document.querySelector(`[data-save-order="${CSS.escape(String(id))}"]`);
+  if (!select || !button) return;
+  const status = select.value;
+  const old = currentOrders.find(order => String(order.id) === String(id));
+  if (!old) return;
+  button.disabled = true;
+  button.textContent = "در حال ذخیره...";
+  try {
+    const {data, error} = await db.from("orders").update({status}).eq("id", id).select("id,status").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("هیچ رکوردی به‌روزرسانی نشد؛ مجوز UPDATE در RLS یا شناسه id را بررسی کن.");
+    old.status = data.status || status;
+    renderOrders();
+    $("ordersStatus").textContent = `وضعیت سفارش ${old.order_code || id} با موفقیت ذخیره شد.`;
+    if (!$ ("homePanel").classList.contains("hidden")) await loadDashboard();
+  } catch (err) {
+    console.error("saveOrderStatus:", err);
+    select.value = old.status || "new";
+    $("ordersStatus").textContent = "ذخیره وضعیت ناموفق بود: " + (err.message || "خطای نامشخص") + " — سیاست UPDATE جدول orders را بررسی کن.";
+  } finally {
+    if (document.body.contains(button)) {
+      button.disabled = false;
+      button.textContent = "ذخیره وضعیت";
+    }
+  }
+}
+
+function messageValue(message, keys) {
+  for (const key of keys) {
+    const value = message?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+  }
+  return "";
+}
+
+function messageReadField(message) {
+  if (Object.prototype.hasOwnProperty.call(message || {}, "is_read")) return "is_read";
+  if (Object.prototype.hasOwnProperty.call(message || {}, "read")) return "read";
+  return null;
+}
+
+function messageIsRead(message) {
+  const field = messageReadField(message);
+  if (!field) return null;
+  return message[field] === true || String(message[field]).toLowerCase() === "true" || message[field] === 1;
+}
+
+async function loadMessages() {
+  if (!db || messagesLoading) return;
+  messagesLoading = true;
+  $("refreshMessages").disabled = true;
+  $("messagesStatus").textContent = "در حال دریافت پیام‌ها از Supabase...";
+  $("messagesBody").replaceChildren();
+  try {
+    const {data, error} = await db.from("messages").select("*").order("created_at", {ascending:false}).limit(500);
+    if (error) throw error;
+    currentMessages = Array.isArray(data) ? data : [];
+    renderMessages();
+    $("messagesStatus").textContent = `تعداد پیام‌های دریافت‌شده: ${currentMessages.length.toLocaleString("fa-IR")}`;
+  } catch (err) {
+    console.error("loadMessages:", err);
+    currentMessages = [];
+    renderMessages();
+    $("messagesStatus").textContent = "خطا در دریافت پیام‌ها: " + (err.message || "خطای نامشخص") + " — وجود جدول messages، ستون created_at و مجوز SELECT مدیر را بررسی کن.";
+  } finally {
+    messagesLoading = false;
+    $("refreshMessages").disabled = false;
+  }
+}
+
+function renderMessages() {
+  if (!$ ("messagesBody")) return;
+  const query = $("messageSearch").value.trim().toLocaleLowerCase("fa");
+  const filter = $("messageFilter").value;
+  const filtered = currentMessages.filter(message => {
+    const read = messageIsRead(message);
+    const statusMatch = filter === "all" || (filter === "read" && read === true) || (filter === "unread" && read === false);
+    const text = [messageValue(message,["name","full_name","sender_name","user_name"]), messageValue(message,["email","contact","sender_email"]), messageValue(message,["subject","title","topic"]), messageValue(message,["message","content","body","text","description"])].join(" ").toLocaleLowerCase("fa");
+    return statusMatch && text.includes(query);
+  });
+  const readCount = currentMessages.filter(m => messageIsRead(m) === true).length;
+  const unreadCount = currentMessages.filter(m => messageIsRead(m) === false).length;
+  $("messagesSummary").innerHTML = `<span>کل پیام‌ها: ${currentMessages.length.toLocaleString("fa-IR")}</span><span>خوانده‌شده: ${readCount.toLocaleString("fa-IR")}</span><span>خوانده‌نشده: ${unreadCount.toLocaleString("fa-IR")}</span>`;
+  $("messagesBody").innerHTML = filtered.map((message, index) => {
+    const id = message.id ?? message.message_id;
+    const read = messageIsRead(message);
+    const name = messageValue(message,["name","full_name","sender_name","user_name"]);
+    const email = messageValue(message,["email","contact","sender_email"]);
+    const subject = messageValue(message,["subject","title","topic"]);
+    const body = messageValue(message,["message","content","body","text","description"]);
+    const canMarkRead = id !== undefined && id !== null && id !== "" && messageReadField(message) && read === false;
+    const readLabel = read === true ? "خوانده‌شده" : read === false ? "خوانده‌نشده" : "ثبت نشده";
+    return `<tr><td>${escapeHTML(name || "—")}</td><td>${escapeHTML(email || "—")}</td><td>${escapeHTML(subject || "—")}</td><td class="message-text">${escapeHTML(body || "—")}</td><td>${escapeHTML(formatDate(message.created_at))}</td><td><span class="message-read">${readLabel}</span></td><td class="message-actions">${canMarkRead ? `<button type="button" class="secondary" data-mark-message="${escapeHTML(id)}">علامت خوانده‌شده</button>` : "—"}</td></tr>`;
+  }).join("");
+  if (!filtered.length) $("messagesBody").innerHTML = `<tr><td colspan="7">${currentMessages.length ? "پیامی با این جست‌وجو یا فیلتر پیدا نشد." : "پیامی برای نمایش دریافت نشد؛ اگر پیام در سایت ثبت شده، جدول messages و مجوز SELECT را بررسی کن."}</td></tr>`;
+}
+
+async function markMessageRead(id) {
+  const message = currentMessages.find(item => String(item.id ?? item.message_id) === String(id));
+  if (!message) return;
+  const field = messageReadField(message);
+  if (!field) {
+    $("messagesStatus").textContent = "جدول پیام‌ها ستون is_read یا read ندارد؛ برای جلوگیری از تغییر اشتباه، وضعیت ذخیره نشد.";
+    return;
+  }
+  try {
+    const {data, error} = await db.from("messages").update({[field]: true}).eq(message.id !== undefined ? "id" : "message_id", id).select("*").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("هیچ رکوردی به‌روزرسانی نشد؛ مجوز UPDATE در RLS یا شناسه پیام را بررسی کن.");
+    Object.assign(message, data);
+    renderMessages();
+    $("messagesStatus").textContent = "پیام با موفقیت به‌عنوان خوانده‌شده علامت خورد.";
+  } catch (err) {
+    console.error("markMessageRead:", err);
+    $("messagesStatus").textContent = "ذخیره وضعیت پیام ناموفق بود: " + (err.message || "خطای نامشخص") + " — سیاست UPDATE جدول messages را بررسی کن.";
+  }
+}
+
+function setStat(id, value) {
+  $(id).textContent = value === null || value === undefined ? "—" : Number(value).toLocaleString("fa-IR");
+}
+
+function monthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function monthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}`;
+}
+
+function renderActivityChart(orders, messages) {
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({key: monthKey(d), label: d.toLocaleDateString("fa-IR", {month:"short"}), orders:0, messages:0});
+  }
+  const byKey = Object.fromEntries(months.map(m => [m.key, m]));
+  for (const row of orders || []) {
+    const d = new Date(row.created_at);
+    if (!Number.isNaN(d.getTime()) && byKey[monthKey(d)]) byKey[monthKey(d)].orders++;
+  }
+  for (const row of messages || []) {
+    const d = new Date(row.created_at);
+    if (!Number.isNaN(d.getTime()) && byKey[monthKey(d)]) byKey[monthKey(d)].messages++;
+  }
+  const max = Math.max(1, ...months.flatMap(m => [m.orders, m.messages]));
+  $("activityChart").innerHTML = months.map(m => {
+    const orderHeight = Math.max(m.orders ? 5 : 3, Math.round(m.orders / max * 125));
+    const messageHeight = Math.max(m.messages ? 5 : 3, Math.round(m.messages / max * 125));
+    return `<div class="month-column">
+      <div class="month-values">${m.orders}/${m.messages}</div>
+      <div class="month-bars">
+        <div class="month-bar orders" style="height:${orderHeight}px" title="سفارش‌ها: ${m.orders}"></div>
+        <div class="month-bar messages" style="height:${messageHeight}px" title="پیام‌ها: ${m.messages}"></div>
+      </div>
+      <div class="month-label">${escapeHTML(m.label)}</div>
+    </div>`;
+  }).join("");
+}
+
+async function loadDashboard() {
+  if (!db || dashboardLoading) return;
+  dashboardLoading = true;
+  $("refreshDashboard").disabled = true;
+  $("dashboardStatus").textContent = "در حال دریافت آمار از Supabase...";
+  for (const id of ["statUsersNote","statOrdersNote","statMessagesNote"]) $(id).textContent = "در حال دریافت...";
+  try {
+    const [usersResult, ordersCountResult, messagesCountResult, ordersRecentResult, messagesRecentResult] = await Promise.all([
+      db.rpc("admin_registered_users"),
+      db.from("orders").select("*", {count:"exact", head:true}),
+      db.from("messages").select("*", {count:"exact", head:true}),
+      db.from("orders").select("created_at").gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth()-5, 1).toISOString()).order("created_at", {ascending:true}).limit(1000),
+      db.from("messages").select("created_at").gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth()-5, 1).toISOString()).order("created_at", {ascending:true}).limit(1000)
+    ]);
+
+    const issues = [];
+    if (usersResult.error) {
+      console.error("dashboard users:", usersResult.error);
+      $("statUsers").textContent = "—";
+      $("statUsersNote").textContent = "خطا در دریافت";
+      issues.push("کاربران");
+    } else {
+      const users = Array.isArray(usersResult.data) ? usersResult.data : [];
+      setStat("statUsers", users.length);
+      $("statUsersNote").textContent = "از فهرست کاربران";
+    }
+
+    if (ordersCountResult.error) {
+      console.error("dashboard orders count:", ordersCountResult.error);
+      $("statOrders").textContent = "—";
+      $("statOrdersNote").textContent = "جدول یا مجوز بررسی شود";
+      issues.push("سفارش‌ها");
+    } else {
+      setStat("statOrders", ordersCountResult.count ?? 0);
+      $("statOrdersNote").textContent = "مجموع ثبت‌شده";
+    }
+
+    if (messagesCountResult.error) {
+      console.error("dashboard messages count:", messagesCountResult.error);
+      $("statMessages").textContent = "—";
+      $("statMessagesNote").textContent = "جدول یا مجوز بررسی شود";
+      issues.push("پیام‌ها");
+    } else {
+      setStat("statMessages", messagesCountResult.count ?? 0);
+      $("statMessagesNote").textContent = "مجموع ثبت‌شده";
+    }
+
+    const ordersForChart = ordersRecentResult.error ? [] : (ordersRecentResult.data || []);
+    const messagesForChart = messagesRecentResult.error ? [] : (messagesRecentResult.data || []);
+    if (ordersRecentResult.error) { console.error("dashboard recent orders:", ordersRecentResult.error); if (!issues.includes("سفارش‌ها")) issues.push("نمودار سفارش‌ها"); }
+    if (messagesRecentResult.error) { console.error("dashboard recent messages:", messagesRecentResult.error); if (!issues.includes("پیام‌ها")) issues.push("نمودار پیام‌ها"); }
+    renderActivityChart(ordersForChart, messagesForChart);
+
+    $("dashboardStatus").textContent = issues.length
+      ? "بعضی آمارها دریافت نشدند (" + issues.join("، ") + "). جدول‌ها و مجوزهای RLS در Supabase باید بررسی شوند."
+      : "آمار با موفقیت از پایگاه داده دریافت شد. نمودار بر اساس رکوردهای شش ماه اخیر است.";
+  } catch (err) {
+    console.error("loadDashboard:", err);
+    $("dashboardStatus").textContent = "خطا در دریافت آمار: " + (err.message || "خطای نامشخص");
+  } finally {
+    dashboardLoading = false;
+    $("refreshDashboard").disabled = false;
+  }
+}
+
 async function navigate(page) {
   const pages = {
-    home: ["نمای کلی", "به پنل مدیریت آکادمی طراحی سایت خوش آمدی."],
+    home: ["نمای کلی", "آمار زنده کاربران، سفارش‌ها و پیام‌های ثبت‌شده در Supabase."],
     users: ["مدیریت کاربران", "فهرست کاربران ثبت‌شده از Supabase."],
-    orders: ["سفارش‌ها", "این بخش هنوز به جدول واقعی سفارش‌ها متصل نشده است."],
-    messages: ["پیام‌ها", "این بخش هنوز به جدول واقعی پیام‌ها متصل نشده است."],
+    orders: ["مدیریت سفارش‌ها", "سفارش‌ها را جست‌وجو کن، بر اساس وضعیت فیلتر کن و وضعیت هر سفارش را تغییر بده."],
+    messages: ["مدیریت پیام‌ها", "پیام‌های دریافت‌شده را ببین، جست‌وجو کن و در صورت پشتیبانی جدول، خوانده‌شدن آن‌ها را ثبت کن."],
     managers: ["مدیریت مدیران", "افزودن مدیر باید با کنترل دسترسی سمت پایگاه داده پیاده‌سازی شود."],
     settings: ["تنظیمات", "از دکمه بالای صفحه برای تغییر حالت استفاده کن."]
   };
@@ -309,6 +722,10 @@ async function navigate(page) {
   $("pageTitle").textContent = selected[0];
   $("pageInfo").textContent = selected[1];
   $("usersPanel").classList.toggle("hidden", page !== "users");
+  $("homePanel").classList.toggle("hidden", page !== "home");
+  $("ordersPanel").classList.toggle("hidden", page !== "orders");
+  $("messagesPanel").classList.toggle("hidden", page !== "messages");
+  $("settingsPanel").classList.toggle("hidden", page !== "settings");
 
   document.querySelectorAll("[data-page]").forEach(button => {
     button.style.opacity = button.dataset.page === page ? "1" : "0.8";
@@ -316,18 +733,67 @@ async function navigate(page) {
   });
 
   if (page === "users") await loadUsers();
+  if (page === "orders") await loadOrders();
+  if (page === "messages") await loadMessages();
+  if (page === "home") await loadDashboard();
 }
 
 $("loginForm").addEventListener("submit", login);
 $("refreshUsers").addEventListener("click", loadUsers);
+$("refreshDashboard").addEventListener("click", loadDashboard);
+$("refreshOrders").addEventListener("click", loadOrders);
+$("refreshMessages").addEventListener("click", loadMessages);
+$("messageSearch").addEventListener("input", renderMessages);
+$("messageFilter").addEventListener("change", renderMessages);
+$("messagesBody").addEventListener("click", event => {
+  const button = event.target.closest("[data-mark-message]");
+  if (button) markMessageRead(button.dataset.markMessage);
+});
 $("userSearch").addEventListener("input", renderUsers);
+$("orderSearch").addEventListener("input", renderOrders);
+$("orderFilter").addEventListener("change", renderOrders);
+$("ordersBody").addEventListener("click", event => {
+  const button = event.target.closest("[data-save-order]");
+  if (button) saveOrderStatus(button.dataset.saveOrder);
+});
 
 document.querySelectorAll("[data-page]").forEach(button => {
   button.addEventListener("click", () => navigate(button.dataset.page));
 });
 
+function setTheme(mode) {
+  const light = mode === "light";
+  document.documentElement.classList.toggle("light", light);
+  try { localStorage.setItem("academy-admin-theme", light ? "light" : "dark"); } catch (_) {}
+  const label = light ? "حالت روشن فعال است." : "حالت تیره فعال است.";
+  const themeStatus = $("themeStatus");
+  if (themeStatus) themeStatus.textContent = label;
+  const connectionSetting = $("connectionSetting");
+  if (connectionSetting && db) connectionSetting.textContent = "کتابخانه Supabase بارگذاری شده است؛ برای بررسی ارتباط با سرور، دکمه بررسی اتصال را بزن.";
+}
+
+try {
+  setTheme(localStorage.getItem("academy-admin-theme") || "dark");
+} catch (_) { setTheme("dark"); }
+
 $("themeBtn").addEventListener("click", () => {
-  document.documentElement.classList.toggle("light");
+  setTheme(document.documentElement.classList.contains("light") ? "dark" : "light");
+});
+$("darkModeSetting").addEventListener("click", () => setTheme("dark"));
+$("lightModeSetting").addEventListener("click", () => setTheme("light"));
+$("testConnectionBtn").addEventListener("click", async () => {
+  const out = $("connectionSetting");
+  const btn = $("testConnectionBtn");
+  btn.disabled = true;
+  out.textContent = "در حال بررسی نشست و اتصال...";
+  try {
+    if (!db) throw new Error("کتابخانه Supabase آماده نیست.");
+    const { data, error } = await db.auth.getSession();
+    if (error) throw error;
+    out.textContent = data.session ? "اتصال Supabase برقرار است و نشست ورود فعال است." : "کتابخانه Supabase آماده است، اما نشست فعالی وجود ندارد. پس از ورود مدیر دوباره بررسی کن.";
+  } catch (err) {
+    out.textContent = "بررسی اتصال ناموفق بود: " + (err.message || "خطای نامشخص");
+  } finally { btn.disabled = false; }
 });
 
 $("logoutBtn").addEventListener("click", async () => {
@@ -349,6 +815,7 @@ $("logoutBtn").addEventListener("click", async () => {
     if (!data.session) return;
     await verifyAdmin(data.session.user);
     showApp(data.session.user);
+    await navigate("home");
   } catch (err) {
     console.error("restoreSession:", err);
     await db.auth.signOut();
