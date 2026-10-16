@@ -209,6 +209,26 @@ th{color:var(--muted)}
           <p class="muted">تغییر وضعیت فقط زمانی ذخیره می‌شود که مجوز UPDATE در سیاست‌های RLS جدول orders برای مدیر تنظیم شده باشد.</p>
         </div>
 
+        <div id="managersPanel" class="hidden">
+          <div class="chart-card">
+            <h3>مدیریت مدیران</h3>
+            <p class="muted">این بخش از دکمهٔ «مدیریت مدیران» باز می‌شود. افزودن یا حذف مدیر باید با کنترل دسترسی امن در پایگاه داده انجام شود.</p>
+          </div>
+        </div>
+
+        <div id="settingsPanel" class="hidden">
+          <div class="chart-card">
+            <h3>ظاهر پنل</h3>
+            <p class="muted">می‌توانی ظاهر پنل را بین حالت تیره و روشن تغییر بدهی. این تغییر فقط ظاهر همین پنل را عوض می‌کند.</p>
+            <button id="settingsThemeBtn" type="button">🌗 تغییر حالت تیره / روشن</button>
+          </div>
+          <div class="chart-card">
+            <h3>وضعیت پنل</h3>
+            <p class="muted">ورود مدیر و اطلاعات کاربران، سفارش‌ها و پیام‌ها از طریق اتصال Supabase انجام می‌شود.</p>
+            <p class="muted">برای امنیت، کلید محرمانه Service Role نباید داخل این فایل قرار بگیرد.</p>
+          </div>
+        </div>
+
         <div id="messagesPanel" class="hidden">
           <div class="orders-toolbar">
             <input id="messageSearch" type="search" placeholder="جست‌وجو در نام، ایمیل، موضوع یا متن پیام" aria-label="جست‌وجوی پیام‌ها">
@@ -227,23 +247,6 @@ th{color:var(--muted)}
             </table>
           </div>
           <p class="muted">این بخش جدول messages را می‌خواند. علامت‌گذاری به‌عنوان خوانده‌شده فقط وقتی فعال می‌شود که جدول، ستون is_read یا read داشته باشد و مجوز UPDATE مدیر در RLS تنظیم شده باشد.</p>
-        </div>
-
-        <div id="settingsPanel" class="hidden">
-          <h3>تنظیمات پنل</h3>
-          <div class="card" style="margin:12px 0;background:var(--bg)">
-            <h4>ظاهر پنل</h4>
-            <p class="muted">حالت نمایش دلخواهت را انتخاب کن. انتخاب در همین مرورگر ذخیره می‌شود.</p>
-            <button type="button" class="secondary" id="darkModeSetting">🌙 حالت تیره</button>
-            <button type="button" class="secondary" id="lightModeSetting">☀️ حالت روشن</button>
-            <p id="themeStatus" class="muted" aria-live="polite"></p>
-          </div>
-          <div class="card" style="margin:12px 0;background:var(--bg)">
-            <h4>وضعیت اتصال</h4>
-            <p id="connectionSetting" class="muted">اتصال پایگاه داده از طریق Supabase انجام می‌شود.</p>
-            <button type="button" id="testConnectionBtn">🔄 بررسی اتصال</button>
-          </div>
-          <p class="muted">برای امنیت، اطلاعات محرمانه و کلید service_role نباید در این پنل یا مرورگر ذخیره شود.</p>
         </div>
       </section>
     </div>
@@ -711,25 +714,36 @@ async function loadDashboard() {
 async function navigate(page) {
   const pages = {
     home: ["نمای کلی", "آمار زنده کاربران، سفارش‌ها و پیام‌های ثبت‌شده در Supabase."],
-    users: ["مدیریت کاربران", "فهرست کاربران ثبت‌شده از Supabase."],
+    users: ["مدیریت کاربران", "فهرست کاربران ثبت‌نام‌شده از Supabase."],
     orders: ["مدیریت سفارش‌ها", "سفارش‌ها را جست‌وجو کن، بر اساس وضعیت فیلتر کن و وضعیت هر سفارش را تغییر بده."],
-    messages: ["مدیریت پیام‌ها", "پیام‌های دریافت‌شده را ببین، جست‌وجو کن و در صورت پشتیبانی جدول، خوانده‌شدن آن‌ها را ثبت کن."],
-    managers: ["مدیریت مدیران", "افزودن مدیر باید با کنترل دسترسی سمت پایگاه داده پیاده‌سازی شود."],
-    settings: ["تنظیمات", "از دکمه بالای صفحه برای تغییر حالت استفاده کن."]
+    messages: ["مدیریت پیام‌ها", "پیام‌های دریافت‌شده را ببین و جست‌وجو کن."],
+    managers: ["مدیریت مدیران", "این بخش مخصوص مدیریت دسترسی مدیران است."],
+    settings: ["تنظیمات", "از دکمهٔ بالای صفحه برای تغییر حالت استفاده کن."]
   };
 
-  const selected = pages[page] || pages.home;
+  // فقط شناسه‌های معتبر پذیرفته می‌شوند؛ دکمهٔ کاربران همیشه صفحهٔ کاربران را باز می‌کند.
+  if (!Object.prototype.hasOwnProperty.call(pages, page)) page = "home";
+  const selected = pages[page];
   $("pageTitle").textContent = selected[0];
   $("pageInfo").textContent = selected[1];
-  $("usersPanel").classList.toggle("hidden", page !== "users");
-  $("homePanel").classList.toggle("hidden", page !== "home");
-  $("ordersPanel").classList.toggle("hidden", page !== "orders");
-  $("messagesPanel").classList.toggle("hidden", page !== "messages");
-  $("settingsPanel").classList.toggle("hidden", page !== "settings");
+
+  const panels = {
+    home: "homePanel",
+    users: "usersPanel",
+    orders: "ordersPanel",
+    messages: "messagesPanel",
+    managers: "managersPanel",
+    settings: "settingsPanel"
+  };
+  Object.entries(panels).forEach(([key, id]) => {
+    const panel = $(id);
+    if (panel) panel.classList.toggle("hidden", key !== page);
+  });
 
   document.querySelectorAll("[data-page]").forEach(button => {
-    button.style.opacity = button.dataset.page === page ? "1" : "0.8";
-    button.setAttribute("aria-current", button.dataset.page === page ? "page" : "false");
+    const active = button.dataset.page === page;
+    button.style.opacity = active ? "1" : "0.8";
+    button.setAttribute("aria-current", active ? "page" : "false");
   });
 
   if (page === "users") await loadUsers();
@@ -757,44 +771,19 @@ $("ordersBody").addEventListener("click", event => {
   if (button) saveOrderStatus(button.dataset.saveOrder);
 });
 
-document.querySelectorAll("[data-page]").forEach(button => {
-  button.addEventListener("click", () => navigate(button.dataset.page));
+// رویداد منو به‌صورت delegation ثبت می‌شود تا کلیک دقیقاً با data-page همان دکمه اجرا شود.
+document.querySelector("nav[aria-label=\"منوی مدیریت\"]").addEventListener("click", event => {
+  const button = event.target.closest("button[data-page]");
+  if (!button) return;
+  event.preventDefault();
+  navigate(button.dataset.page);
 });
 
-function setTheme(mode) {
-  const light = mode === "light";
-  document.documentElement.classList.toggle("light", light);
-  try { localStorage.setItem("academy-admin-theme", light ? "light" : "dark"); } catch (_) {}
-  const label = light ? "حالت روشن فعال است." : "حالت تیره فعال است.";
-  const themeStatus = $("themeStatus");
-  if (themeStatus) themeStatus.textContent = label;
-  const connectionSetting = $("connectionSetting");
-  if (connectionSetting && db) connectionSetting.textContent = "کتابخانه Supabase بارگذاری شده است؛ برای بررسی ارتباط با سرور، دکمه بررسی اتصال را بزن.";
+function toggleTheme() {
+  document.documentElement.classList.toggle("light");
 }
-
-try {
-  setTheme(localStorage.getItem("academy-admin-theme") || "dark");
-} catch (_) { setTheme("dark"); }
-
-$("themeBtn").addEventListener("click", () => {
-  setTheme(document.documentElement.classList.contains("light") ? "dark" : "light");
-});
-$("darkModeSetting").addEventListener("click", () => setTheme("dark"));
-$("lightModeSetting").addEventListener("click", () => setTheme("light"));
-$("testConnectionBtn").addEventListener("click", async () => {
-  const out = $("connectionSetting");
-  const btn = $("testConnectionBtn");
-  btn.disabled = true;
-  out.textContent = "در حال بررسی نشست و اتصال...";
-  try {
-    if (!db) throw new Error("کتابخانه Supabase آماده نیست.");
-    const { data, error } = await db.auth.getSession();
-    if (error) throw error;
-    out.textContent = data.session ? "اتصال Supabase برقرار است و نشست ورود فعال است." : "کتابخانه Supabase آماده است، اما نشست فعالی وجود ندارد. پس از ورود مدیر دوباره بررسی کن.";
-  } catch (err) {
-    out.textContent = "بررسی اتصال ناموفق بود: " + (err.message || "خطای نامشخص");
-  } finally { btn.disabled = false; }
-});
+$("themeBtn").addEventListener("click", toggleTheme);
+$("settingsThemeBtn").addEventListener("click", toggleTheme);
 
 $("logoutBtn").addEventListener("click", async () => {
   if (!db) return;
