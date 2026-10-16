@@ -254,18 +254,54 @@ function renderUsers() {
 }
 
 async function navigate(page) {
-  $("usersPanel").classList.add("hidden");
-  $("pageTitle").textContent = "";
-  $("pageInfo").textContent = "";
-
   const pages = {
-    home:["نمای کلی","پنل مدیریت آکادمی طراحی سایت."],
-    users:["مدیریت کاربران","فهرست کاربران از Supabase دریافت می‌شود."],
-    orders:["سفارش‌ها","این بخش هنوز به جدول واقعی سفارش‌ها متصل نشده است."],
-    messages:["پیام‌ها","این بخش هنوز به جدول واقعی پیام‌ها متصل نشده است."],
-    managers:["مدیریت مدیران","افزودن مدیر باید با کنترل دسترسی سمت پایگاه داده پیاده‌سازی شود."],
-    settings:["تنظیمات","از دکمهٔ بالای صفحه برای تغییر حالت استفاده کن."]
+    home: [
+      "نمای کلی",
+      "به پنل مدیریت آکادمی طراحی سایت خوش آمدی."
+    ],
+    users: [
+      "مدیریت کاربران",
+      "فهرست کاربران ثبت‌شده از Supabase."
+    ],
+    orders: [
+      "سفارش‌ها",
+      "بخش سفارش‌ها انتخاب شد."
+    ],
+    messages: [
+      "پیام‌ها",
+      "بخش پیام‌ها انتخاب شد."
+    ],
+    managers: [
+      "مدیریت مدیران",
+      "بخش مدیریت مدیران انتخاب شد."
+    ],
+    settings: [
+      "تنظیمات",
+      "از دکمه بالای صفحه برای تغییر حالت استفاده کن."
+    ]
   };
+
+  const selected = pages[page] || pages.home;
+
+  $("pageTitle").textContent = selected[0];
+  $("pageInfo").textContent = selected[1];
+
+  $("usersPanel").classList.toggle(
+    "hidden",
+    page !== "users"
+  );
+
+  document.querySelectorAll("[data-page]").forEach(button => {
+    button.style.opacity =
+      button.dataset.page === page ? "1" : "0.8";
+  });
+
+  if (page === "users") {
+    await loadUsers();
+  }
+}
+  
+    
 
   const info = pages[page] || pages.home;
   $("pageTitle").textContent = info[0];
