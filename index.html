@@ -212,7 +212,17 @@ th{color:var(--muted)}
         <div id="managersPanel" class="hidden">
           <div class="chart-card">
             <h3>مدیریت مدیران</h3>
-            <p class="muted">این بخش از دکمهٔ «مدیریت مدیران» باز می‌شود. افزودن یا حذف مدیر باید با کنترل دسترسی امن در پایگاه داده انجام شود.</p>
+            <p class="muted">فقط مالک پنل با ایمیل kazmpour1392@gmail.com می‌تواند مدیر اضافه یا حذف کند. کنترل نهایی دسترسی باید در توابع امن پایگاه داده انجام شود.</p>
+            <div id="managersOwnerArea" class="hidden">
+              <label for="managerEmail">ایمیل حسابی که قبلاً در سایت ثبت‌نام کرده است</label>
+              <input id="managerEmail" type="email" placeholder="name@example.com">
+              <button id="addManagerBtn" type="button">➕ افزودن مدیر</button>
+              <button id="refreshManagersBtn" class="secondary" type="button">🔄 تازه‌سازی فهرست مدیران</button>
+            </div>
+            <p id="managersStatus" class="muted" role="status" aria-live="polite"></p>
+            <div class="table-wrap">
+              <table><thead><tr><th>شناسه کاربر</th><th>ایمیل</th><th>عملیات</th></tr></thead><tbody id="managersBody"></tbody></table>
+            </div>
           </div>
         </div>
 
@@ -246,7 +256,16 @@ th{color:var(--muted)}
               <tbody id="messagesBody"></tbody>
             </table>
           </div>
-          <p class="muted">این بخش جدول messages را می‌خواند. علامت‌گذاری به‌عنوان خوانده‌شده فقط وقتی فعال می‌شود که جدول، ستون is_read یا read داشته باشد و مجوز UPDATE مدیر در RLS تنظیم شده باشد.</p>
+          <p class="muted">برای پاسخ‌دادن، روی «پاسخ» بزن، متن را بنویس و ارسال کن. پاسخ‌ها در جدول message_replies ذخیره می‌شوند و نیازمند تابع امن admin_send_message_reply هستند.</p>
+          <div id="replyBox" class="chart-card hidden">
+            <h3 id="replyHeading">پاسخ به پیام</h3>
+            <p id="replyMessagePreview" class="muted"></p>
+            <label for="replyText">متن پاسخ</label>
+            <textarea id="replyText" rows="5" style="width:100%;max-width:100%;font:inherit;border-radius:10px;padding:12px;background:var(--bg);border:1px solid var(--border);color:var(--text)" placeholder="پاسخ خود را بنویس..."></textarea>
+            <button id="sendReplyBtn" type="button">📨 ارسال پاسخ</button>
+            <button id="cancelReplyBtn" class="secondary" type="button">انصراف</button>
+            <p id="replyStatus" class="muted" role="status" aria-live="polite"></p>
+          </div>
         </div>
       </section>
     </div>
@@ -273,6 +292,8 @@ let messagesLoading = false;
 let loginInProgress = false;
 let dashboardLoading = false;
 let ordersLoading = false;
+let activeUser = null;
+let replyTargetMessage = null;
 
 function setStatus(message) {
   $("status").textContent = message;
@@ -326,6 +347,8 @@ async function verifyAdmin(user) {
 }
 
 function showApp(user) {
+  activeUser = user;
+  $("managersOwnerArea").classList.toggle("hidden", String(user?.email || "").toLowerCase() !== "kazmpour1392@gmail.com");
   $("loginView").classList.add("hidden");
   $("appView").classList.remove("hidden");
   $("logoutBtn").classList.remove("hidden");
@@ -577,7 +600,7 @@ function renderMessages() {
     const body = messageValue(message,["message","content","body","text","description"]);
     const canMarkRead = id !== undefined && id !== null && id !== "" && messageReadField(message) && read === false;
     const readLabel = read === true ? "خوانده‌شده" : read === false ? "خوانده‌نشده" : "ثبت نشده";
-    return `<tr><td>${escapeHTML(name || "—")}</td><td>${escapeHTML(email || "—")}</td><td>${escapeHTML(subject || "—")}</td><td class="message-text">${escapeHTML(body || "—")}</td><td>${escapeHTML(formatDate(message.created_at))}</td><td><span class="message-read">${readLabel}</span></td><td class="message-actions">${canMarkRead ? `<button type="button" class="secondary" data-mark-message="${escapeHTML(id)}">علامت خوانده‌شده</button>` : "—"}</td></tr>`;
+    return `<tr><td>${escapeHTML(name || "—")}</td><td>${escapeHTML(email || "—")}</td><td>${escapeHTML(subject || "—")}</td><td class="message-text">${escapeHTML(body || "—")}</td><td>${escapeHTML(formatDate(message.created_at))}</td><td><span class="message-read">${readLabel}</span></td><td class="message-actions"><button type="button" class="secondary" data-reply-message="${escapeHTML(id ?? "")}">پاسخ</button> ${canMarkRead ? `<button type="button" class="secondary" data-mark-message="${escapeHTML(id)}">خوانده‌شده</button>` : ""}</td></tr>`;
   }).join("");
   if (!filtered.length) $("messagesBody").innerHTML = `<tr><td colspan="7">${currentMessages.length ? "پیامی با این جست‌وجو یا فیلتر پیدا نشد." : "پیامی برای نمایش دریافت نشد؛ اگر پیام در سایت ثبت شده، جدول messages و مجوز SELECT را بررسی کن."}</td></tr>`;
 }
@@ -601,6 +624,106 @@ async function markMessageRead(id) {
     console.error("markMessageRead:", err);
     $("messagesStatus").textContent = "ذخیره وضعیت پیام ناموفق بود: " + (err.message || "خطای نامشخص") + " — سیاست UPDATE جدول messages را بررسی کن.";
   }
+}
+
+async function loadManagers() {
+  const owner = String(activeUser?.email || "").toLowerCase() === "kazmpour1392@gmail.com";
+  $("managersOwnerArea").classList.toggle("hidden", !owner);
+  $("managersStatus").textContent = "در حال دریافت فهرست مدیران...";
+  $("managersBody").replaceChildren();
+  try {
+    const {data, error} = await db.rpc("admin_list_managers");
+    if (error) throw error;
+    const managers = Array.isArray(data) ? data : [];
+    $("managersBody").innerHTML = managers.map(m => {
+      const id = m.user_id ?? m.id;
+      const email = m.email || "ایمیل در دسترس نیست";
+      const isOwner = String(email).toLowerCase() === "kazmpour1392@gmail.com";
+      return `<tr><td>${escapeHTML(id || "—")}</td><td>${escapeHTML(email)}</td><td>${owner && !isOwner && id ? `<button type="button" class="secondary" data-remove-manager="${escapeHTML(id)}">حذف مدیر</button>` : (isOwner ? "مالک اصلی" : "فقط مالک می‌تواند تغییر دهد")}</td></tr>`;
+    }).join("");
+    if (!managers.length) $("managersBody").innerHTML = '<tr><td colspan="3">مدیری برای نمایش دریافت نشد.</td></tr>';
+    $("managersStatus").textContent = owner ? `تعداد مدیران: ${managers.length}` : "فهرست مدیران دریافت شد؛ افزودن یا حذف فقط برای مالک اصلی فعال است.";
+  } catch (err) {
+    console.error("loadManagers:", err);
+    $("managersStatus").textContent = "دریافت مدیران ناموفق بود: " + (err.message || "خطای نامشخص") + " — تابع امن admin_list_managers را در Supabase ایجاد کن.";
+  }
+}
+
+async function addManager() {
+  if (String(activeUser?.email || "").toLowerCase() !== "kazmpour1392@gmail.com") {
+    $("managersStatus").textContent = "دسترسی غیرمجاز؛ فقط مالک اصلی می‌تواند مدیر اضافه کند.";
+    return;
+  }
+  const email = $("managerEmail").value.trim().toLowerCase();
+  if (!email) { $("managersStatus").textContent = "ایمیل مدیر را وارد کن."; return; }
+  $("addManagerBtn").disabled = true;
+  $("managersStatus").textContent = "در حال افزودن مدیر...";
+  try {
+    const {error} = await db.rpc("owner_add_admin", {p_email: email});
+    if (error) throw error;
+    $("managerEmail").value = "";
+    $("managersStatus").textContent = "درخواست افزودن مدیر انجام شد.";
+    await loadManagers();
+  } catch (err) {
+    console.error("addManager:", err);
+    $("managersStatus").textContent = "افزودن مدیر ناموفق بود: " + (err.message || "خطای نامشخص") + " — تابع امن owner_add_admin و دسترسی حساب را بررسی کن.";
+  } finally { $("addManagerBtn").disabled = false; }
+}
+
+async function removeManager(id) {
+  if (String(activeUser?.email || "").toLowerCase() !== "kazmpour1392@gmail.com") {
+    $("managersStatus").textContent = "دسترسی غیرمجاز.";
+    return;
+  }
+  if (!confirm("از حذف دسترسی این مدیر مطمئنی؟")) return;
+  $("managersStatus").textContent = "در حال حذف مدیر...";
+  try {
+    const {error} = await db.rpc("owner_remove_admin", {p_user_id: id});
+    if (error) throw error;
+    $("managersStatus").textContent = "درخواست حذف مدیر انجام شد.";
+    await loadManagers();
+  } catch (err) {
+    console.error("removeManager:", err);
+    $("managersStatus").textContent = "حذف مدیر ناموفق بود: " + (err.message || "خطای نامشخص") + " — تابع امن owner_remove_admin را در Supabase ایجاد کن.";
+  }
+}
+
+function openReply(message) {
+  replyTargetMessage = message;
+  const name = messageValue(message, ["name","full_name","sender_name","user_name"]) || "کاربر";
+  const subject = messageValue(message, ["subject","title","topic"]) || "بدون موضوع";
+  const body = messageValue(message, ["message","content","body","text","description"]) || "";
+  $("replyHeading").textContent = "پاسخ به " + name;
+  $("replyMessagePreview").textContent = "موضوع: " + subject + " | متن پیام: " + body;
+  $("replyText").value = "";
+  $("replyStatus").textContent = "";
+  $("replyBox").classList.remove("hidden");
+  $("replyText").focus();
+}
+
+async function sendMessageReply() {
+  if (!replyTargetMessage) return;
+  const reply = $("replyText").value.trim();
+  if (!reply) { $("replyStatus").textContent = "متن پاسخ را بنویس."; return; }
+  const id = replyTargetMessage.id ?? replyTargetMessage.message_id;
+  if (id === undefined || id === null || id === "") {
+    $("replyStatus").textContent = "این پیام شناسه ندارد و امکان پاسخ امن به آن نیست.";
+    return;
+  }
+  $("sendReplyBtn").disabled = true;
+  $("replyStatus").textContent = "در حال ارسال پاسخ...";
+  try {
+    const {error} = await db.rpc("admin_send_message_reply", {p_message_id: String(id), p_reply: reply});
+    if (error) throw error;
+    $("replyStatus").textContent = "پاسخ با موفقیت ثبت شد.";
+    const readField = messageReadField(replyTargetMessage);
+    if (readField) replyTargetMessage[readField] = true;
+    renderMessages();
+    $("messagesStatus").textContent = "پاسخ ثبت شد. ارسال ایمیل یا نمایش پاسخ در سایت کاربر، در صورت نیاز، باید جداگانه تنظیم شود.";
+  } catch (err) {
+    console.error("sendMessageReply:", err);
+    $("replyStatus").textContent = "ارسال پاسخ ناموفق بود: " + (err.message || "خطای نامشخص") + " — تابع امن admin_send_message_reply را در Supabase ایجاد کن.";
+  } finally { $("sendReplyBtn").disabled = false; }
 }
 
 function setStat(id, value) {
@@ -749,6 +872,7 @@ async function navigate(page) {
   if (page === "users") await loadUsers();
   if (page === "orders") await loadOrders();
   if (page === "messages") await loadMessages();
+  if (page === "managers") await loadManagers();
   if (page === "home") await loadDashboard();
 }
 
@@ -760,8 +884,22 @@ $("refreshMessages").addEventListener("click", loadMessages);
 $("messageSearch").addEventListener("input", renderMessages);
 $("messageFilter").addEventListener("change", renderMessages);
 $("messagesBody").addEventListener("click", event => {
+  const replyButton = event.target.closest("[data-reply-message]");
+  if (replyButton) {
+    const message = currentMessages.find(item => String(item.id ?? item.message_id) === String(replyButton.dataset.replyMessage));
+    if (message) openReply(message);
+    return;
+  }
   const button = event.target.closest("[data-mark-message]");
   if (button) markMessageRead(button.dataset.markMessage);
+});
+$("sendReplyBtn").addEventListener("click", sendMessageReply);
+$("cancelReplyBtn").addEventListener("click", () => { $("replyBox").classList.add("hidden"); replyTargetMessage = null; });
+$("addManagerBtn").addEventListener("click", addManager);
+$("refreshManagersBtn").addEventListener("click", loadManagers);
+$("managersBody").addEventListener("click", event => {
+  const button = event.target.closest("[data-remove-manager]");
+  if (button) removeManager(button.dataset.removeManager);
 });
 $("userSearch").addEventListener("input", renderUsers);
 $("orderSearch").addEventListener("input", renderOrders);
