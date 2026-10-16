@@ -6,7 +6,53 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>پنل مدیریت | آکادمی طراحی سایت</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
+
+  /* نمایش واکنش‌گرا در گوشی و کامپیوتر */
+html {
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  main {
+    width: 100%;
+    max-width: 100%;
+    margin: 16px auto;
+    padding: 0 10px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  nav button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .card {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  input, button {
+    font-size: 16px;
+  }
+
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+  
+  <style>
 :root {
   color-scheme: dark;
   --bg:#101426; --card:#1b2340; --text:#f4f5ff;
