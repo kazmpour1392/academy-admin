@@ -1,311 +1,881 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>پنل مدیریت | آکادمی طراحی سایت</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root {
-  color-scheme: dark;
-  --bg:#101426; --card:#1b2340; --text:#f4f5ff;
-  --muted:#aeb8d1; --accent:#8172ff; --border:#343e5c;
-}
-:root.light {
-  color-scheme:light;
-  --bg:#f2f4fb; --card:#fff; --text:#192039;
-  --muted:#65708a; --accent:#6252df; --border:#dce1ef;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}
-header{padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
-h1{font-size:21px}
-main{max-width:1100px;margin:30px auto;padding:0 16px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:22px;margin-bottom:18px}
-input,button{font:inherit;border-radius:10px;padding:12px;margin:5px 0}
-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text)}
-button{border:0;background:var(--accent);color:white;cursor:pointer}
-button:disabled{opacity:.6}
-.secondary{background:var(--card);border:1px solid var(--border);color:var(--text)}
-.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px}
-nav button{display:block;width:100%;text-align:right;margin:7px 0}
-.muted{color:var(--muted);font-size:13px;line-height:2}
-.hidden{display:none!important}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;white-space:nowrap}
-th,td{padding:12px;text-align:right;border-bottom:1px solid var(--border)}
-th{color:var(--muted)}
-#status{overflow-wrap:anywhere}
-@media(max-width:700px){.layout{grid-template-columns:1fr}header{padding:12px}h1{font-size:17px}}
-</style>
-</head>
-<body>
-<header>
-  <div>
-    <h1>آکادمی طراحی سایت</h1>
-    <div class="muted">پنل مدیریت مستقل</div>
-  </div>
-  <div>
-    <button class="secondary" id="themeBtn">🌗 تغییر حالت</button>
-    <button id="logoutBtn" class="hidden">خروج</button>
-  </div>
-</header>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>پنل مدیریت | آکادمی طراحی سایت</title>
 
-<main>
-  <section id="loginView" class="card">
-    <h2>ورود مدیر</h2>
-    <p class="muted">با حساب مدیر مجاز وارد شو.</p>
-    <form id="loginForm">
-      <label for="email">ایمیل</label>
-      <input id="email" type="email" autocomplete="username" required>
-      <label for="password">رمز عبور</label>
-      <input id="password" type="password" autocomplete="current-password" required>
-      <button id="loginBtn" type="submit">ورود امن</button>
-    </form>
-    <p id="status" class="muted" role="status"></p>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #f3f5fb;
+      --panel: #ffffff;
+      --text: #182033;
+      --muted: #697386;
+      --border: #e4e8f0;
+      --primary: #6d5dfc;
+      --primary-hover: #5545e8;
+      --side: #151a2d;
+      --side-text: #e9ecff;
+      --success: #12805c;
+      --danger: #d13d50;
+      --shadow: 0 8px 30px rgba(20, 30, 60, .06);
+    }
+
+    body.dark {
+      --bg: #0b1020;
+      --panel: #151c2e;
+      --text: #f0f3ff;
+      --muted: #a5aec3;
+      --border: #2a344b;
+      --side: #080c18;
+      --side-text: #f0f3ff;
+      --shadow: 0 8px 30px rgba(0, 0, 0, .15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      width: 100%;
+      min-height: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      overflow-x: hidden;
+      touch-action: pan-x pan-y pinch-zoom;
+      transition: background .2s, color .2s;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      font-size: 16px;
+    }
+
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: var(--primary);
+      color: white;
+      font-size: 25px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 23px;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      font-size: 21px;
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 16px;
+    }
+
+    .field {
+      margin: 16px 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 11px;
+      padding: 10px 15px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
+      transition: background .15s;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .btn-secondary {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .message {
+      padding: 10px 12px;
+      margin-top: 14px;
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      overflow-wrap: anywhere;
+    }
+
+    .message.error {
+      color: var(--danger);
+    }
+
+    .message.success {
+      color: var(--success);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--side);
+      color: var(--side-text);
+      padding: 22px 15px;
+      min-width: 0;
+    }
+
+    .side-brand {
+      padding: 4px 10px 22px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      margin-bottom: 18px;
+    }
+
+    .side-brand strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .side-brand small {
+      opacity: .7;
+    }
+
+    .nav-title {
+      font-size: 12px;
+      opacity: .6;
+      padding: 8px 12px;
+    }
+
+    .nav-btn {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--side-text);
+      border-radius: 11px;
+      text-align: right;
+      padding: 12px;
+      margin: 4px 0;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      background: rgba(120, 108, 255, .24);
+    }
+
+    .nav-btn.active {
+      box-shadow: inset -3px 0 var(--primary);
+    }
+
+    .main {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat, .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .toolbar input {
+      flex: 1 1 220px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+      text-align: right;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 3px 9px;
+      background: var(--bg);
+      font-size: 12px;
+    }
+
+    .status.ok {
+      color: var(--success);
+    }
+
+    .empty {
+      padding: 28px 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      padding: 22px 0 5px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 950px) {
+      .app {
+        grid-template-columns: 210px minmax(0, 1fr);
+      }
+
+      .main {
+        padding: 16px;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        display: block;
+      }
+
+      .sidebar {
+        padding: 12px;
+      }
+
+      .side-brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 6px 12px;
+        margin-bottom: 10px;
+      }
+
+      .side-brand strong {
+        font-size: 16px;
+      }
+
+      .nav-title {
+        display: none;
+      }
+
+      .nav-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .nav-btn {
+        padding: 10px 8px;
+        margin: 0;
+        font-size: 13px;
+        justify-content: flex-start;
+      }
+
+      .main {
+        padding: 12px;
+      }
+
+      .topbar {
+        padding: 12px;
+        margin-bottom: 14px;
+      }
+
+      .topbar h1 {
+        font-size: 18px;
+      }
+
+      .top-actions {
+        width: 100%;
+      }
+
+      .top-actions .btn {
+        flex: 1;
+      }
+
+      .cards {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .stat, .panel {
+        padding: 15px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .panel-head {
+        align-items: flex-start;
+      }
+
+      .login-card {
+        padding: 22px 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <section id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="brand-mark">A</div>
+      <h1>ورود به پنل مدیریت</h1>
+      <p class="muted">آکادمی طراحی سایت</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">ایمیل مدیر</label>
+          <input id="email" type="email" autocomplete="username"
+                 placeholder="ایمیل خود را وارد کنید" required>
+        </div>
+
+        <div class="field">
+          <label for="password">رمز عبور</label>
+          <input id="password" type="password"
+                 autocomplete="current-password"
+                 placeholder="رمز عبور" required>
+        </div>
+
+        <button id="loginBtn" class="btn btn-block" type="submit">
+          ورود امن
+        </button>
+        <div id="loginMessage" role="status" aria-live="polite"></div>
+      </form>
+    </div>
   </section>
 
-  <section id="appView" class="hidden">
-    <div class="card">
-      <h2>داشبورد مدیریت</h2>
-      <p id="welcome" class="muted"></p>
-    </div>
-    <div class="layout">
-      <nav class="card">
-        <h3>منوی مدیریت</h3>
-        <button data-page="home">🏠 نمای کلی</button>
-        <button data-page="users">👥 مدیریت کاربران</button>
-        <button data-page="orders">🧾 سفارش‌ها</button>
-        <button data-page="messages">💬 پیام‌ها</button>
-        <button data-page="managers">🛡️ مدیریت مدیران</button>
-        <button data-page="settings">⚙️ تنظیمات</button>
-      </nav>
-      <section class="card">
-        <h2 id="pageTitle">نمای کلی</h2>
-        <p id="pageInfo" class="muted">به پنل مدیریت خوش آمدی.</p>
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <div>
+          <strong>آکادمی طراحی سایت</strong>
+          <small>پنل مدیریت مستقل</small>
+        </div>
+        <span>⚙️</span>
+      </div>
 
-        <div id="usersPanel" class="hidden">
-          <input id="userSearch" type="search" placeholder="جست‌وجو بر اساس نام یا ایمیل">
-          <button id="refreshUsers">تازه‌سازی فهرست</button>
-          <p id="usersStatus" class="muted"></p>
+      <div class="nav-title">منوی مدیریت</div>
+      <nav class="nav-list" aria-label="منوی مدیریت">
+        <button class="nav-btn active" data-section="dashboard">🏠 داشبورد</button>
+        <button class="nav-btn" data-section="users">👥 مدیریت کاربران</button>
+        <button class="nav-btn" data-section="orders">📦 مدیریت سفارش‌ها</button>
+        <button class="nav-btn" data-section="messages">✉️ پیام‌ها</button>
+        <button class="nav-btn" data-section="admins">🛡️ مدیران</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">داشبورد مدیریت</h1>
+          <div id="welcome" class="muted">در حال بررسی دسترسی...</div>
+        </div>
+        <div class="top-actions">
+          <button id="themeBtn" class="btn btn-secondary" type="button">
+            🌙 تغییر حالت
+          </button>
+          <button id="logoutBtn" class="btn btn-danger" type="button">
+            خروج
+          </button>
+        </div>
+      </header>
+
+      <section id="dashboardSection">
+        <div class="cards">
+          <div class="stat">
+            <div class="stat-label">وضعیت اتصال</div>
+            <div id="connectionStat" class="stat-value">...</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">کاربران ثبت‌شده</div>
+            <div id="userCount" class="stat-value">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">سطح دسترسی</div>
+            <div class="stat-value">مدیر</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>به پنل مدیریت خوش آمدی</h2>
+          <p class="muted">
+            از منوی بالا می‌توانی بخش کاربران را باز کنی و فهرست کاربران
+            ثبت‌شده را از پایگاه داده دریافت کنی.
+          </p>
+          <button class="btn" data-go-users type="button">
+            مشاهده کاربران
+          </button>
+        </div>
+      </section>
+
+      <section id="usersSection" class="hidden">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>مدیریت کاربران</h2>
+              <div class="muted">فهرست حساب‌های ثبت‌شده در سامانه</div>
+            </div>
+            <button id="refreshUsers" class="btn" type="button">
+              ↻ تازه‌سازی
+            </button>
+          </div>
+
+          <div class="toolbar">
+            <input id="userSearch" type="search"
+                   placeholder="جست‌وجو با ایمیل یا نام کاربر..."
+                   aria-label="جست‌وجوی کاربران">
+          </div>
+
+          <div id="usersMessage" role="status" aria-live="polite"></div>
+
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>شناسه</th>
-                  <th>نام</th>
+                  <th>ردیف</th>
+                  <th>نام کاربر</th>
                   <th>ایمیل</th>
                   <th>تاریخ ثبت‌نام</th>
                 </tr>
               </thead>
-              <tbody id="usersBody"></tbody>
+              <tbody id="usersBody">
+                <tr><td colspan="4" class="empty">برای دریافت اطلاعات، تازه‌سازی را بزن.</td></tr>
+              </tbody>
             </table>
           </div>
         </div>
       </section>
-    </div>
-  </section>
-  <footer class="muted" style="text-align:center;padding:20px">
-    سازنده: سید امیر حسین کاظم پور
-  </footer>
-</main>
 
-<script>
-"use strict";
+      <section id="ordersSection" class="hidden">
+        <div class="panel">
+          <h2>مدیریت سفارش‌ها</h2>
+          <p class="muted">
+            این بخش هنوز به جدول سفارش‌های Supabase متصل نشده است.
+            سفارش‌های سایت اصلی با این صفحه به‌صورت خودکار همگام نمی‌شوند.
+          </p>
+        </div>
+      </section>
 
-const SUPABASE_URL =
-  "https://pdspayxfazoutbjxqswi.supabase.co";
+      <section id="messagesSection" class="hidden">
+        <div class="panel">
+          <h2>پیام‌ها</h2>
+          <p class="muted">
+            برای نمایش پیام‌ها باید این بخش به جدول پیام‌های موجود در پایگاه
+            داده متصل شود.
+          </p>
+        </div>
+      </section>
 
-// این مقدار باید کلید عمومی معتبر پروژه باشد.
-// کلید محرمانه service_role را هرگز در مرورگر قرار نده.
-const SUPABASE_KEY =
-  "sb_publishable_kPYB9r27zwqmJYRDYBMb_A_YR-2a2PX";
+      <section id="adminsSection" class="hidden">
+        <div class="panel">
+          <h2>مدیریت مدیران</h2>
+          <p class="muted">
+            افزودن و حذف مدیران هنوز پیاده‌سازی نشده است. برای امنیت،
+            این کار باید از طریق یک تابع امن سمت سرور انجام شود؛
+            صرفاً نمایش این صفحه به معنی داشتن امکان افزودن مدیر نیست.
+          </p>
+        </div>
+      </section>
 
-const db = window.supabase.createClient(
-  SUPABASE_URL, SUPABASE_KEY
-);
+      <footer class="footer">
+        پنل مدیریت مستقل آکادمی طراحی سایت
+      </footer>
+    </main>
+  </div>
 
-const $ = id => document.getElementById(id);
-let currentUsers = [];
+  <script>
+    // کلید عمومی Supabase را اینجا قرار بده.
+    // هرگز service_role یا کلید مخفی سرور را در این فایل نگذار.
+    const SUPABASE_URL =
+      "https://pdspayxfazoutbjxqswi.supabase.co";
 
-function setStatus(message) {
-  $("status").textContent = message;
-}
+    const SUPABASE_KEY =
+      "sb_publishable_kPYB9r27zwqmJYRDYBMb_A_YR-2a2PX";
 
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;",
-    '"':"&quot;", "'":"&#039;"
-  })[ch]);
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("fa-IR", {
-    dateStyle:"medium", timeStyle:"short"
-  });
-}
-
-async function verifyAdmin(user) {
-  const {data, error} = await db
-    .from("admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(
-      "بررسی دسترسی مدیر ناموفق بود. سیاست‌های دسترسی جدول admins را بررسی کن."
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
     );
-  }
 
-  if (!data) {
-    throw new Error("این حساب در فهرست مدیران مجاز نیست.");
-  }
-}
+    const $ = (id) => document.getElementById(id);
 
-function showApp(user) {
-  $("loginView").classList.add("hidden");
-  $("appView").classList.remove("hidden");
-  $("logoutBtn").classList.remove("hidden");
-  $("welcome").textContent =
-    "حساب واردشده: " + (user.email || "مدیر");
-}
+    let allUsers = [];
+    let currentUser = null;
 
-function showLogin() {
-  $("appView").classList.add("hidden");
-  $("loginView").classList.remove("hidden");
-  $("logoutBtn").classList.add("hidden");
-}
+    const sectionNames = {
+      dashboard: "داشبورد مدیریت",
+      users: "مدیریت کاربران",
+      orders: "مدیریت سفارش‌ها",
+      messages: "پیام‌ها",
+      admins: "مدیریت مدیران"
+    };
 
-async function login(event) {
-  event.preventDefault();
-  $("loginBtn").disabled = true;
-  setStatus("در حال بررسی اطلاعات ورود...");
-
-  try {
-    const {data, error} = await db.auth.signInWithPassword({
-      email:$("email").value.trim(),
-      password:$("password").value
-    });
-    if (error) throw error;
-
-    try {
-      await verifyAdmin(data.user);
-      showApp(data.user);
-      setStatus("");
-    } catch (err) {
-      await db.auth.signOut();
-      throw err;
+    function setMessage(id, message, type = "") {
+      const el = $(id);
+      el.textContent = message;
+      el.className = "message " + type;
     }
-  } catch (err) {
-    setStatus(err.message || "ورود ناموفق بود.");
-  } finally {
-    $("loginBtn").disabled = false;
-  }
-}
 
-async function loadUsers() {
-  $("usersStatus").textContent = "در حال دریافت کاربران...";
-  $("usersBody").replaceChildren();
-  $("refreshUsers").disabled = true;
+    function showSection(name) {
+      const valid = ["dashboard", "users", "orders", "messages", "admins"];
+      if (!valid.includes(name)) return;
 
-  try {
-    // تابع موجود در Supabase
-    const {data, error} = await db.rpc("admin_registered_users");
-    if (error) throw error;
+      valid.forEach((section) => {
+        $(section + "Section").classList.toggle(
+          "hidden", section !== name
+        );
+      });
 
-    currentUsers = Array.isArray(data) ? data : [];
-    renderUsers();
-    $("usersStatus").textContent =
-      "تعداد کاربران دریافت‌شده: " + currentUsers.length;
-  } catch (err) {
-    console.error("admin_registered_users:", err);
-    $("usersStatus").textContent =
-      "خطا در دریافت کاربران: " + (err.message || "خطای نامشخص");
-  } finally {
-    $("refreshUsers").disabled = false;
-  }
-}
+      document.querySelectorAll(".nav-btn").forEach((button) => {
+        button.classList.toggle(
+          "active", button.dataset.section === name
+        );
+      });
 
-function renderUsers() {
-  const query = $("userSearch").value.trim().toLocaleLowerCase("fa");
-  const filtered = currentUsers.filter(user =>
-    String(user.full_name || "").toLocaleLowerCase("fa").includes(query) ||
-    String(user.email || "").toLocaleLowerCase("fa").includes(query)
-  );
+      $("pageTitle").textContent = sectionNames[name];
 
-  $("usersBody").innerHTML = filtered.map(user => `
-    <tr>
-      <td>${escapeHTML(user.user_id || "—")}</td>
-      <td>${escapeHTML(user.full_name || "بدون نام")}</td>
-      <td>${escapeHTML(user.email || "—")}</td>
-      <td>${escapeHTML(formatDate(user.created_at))}</td>
-    </tr>
-  `).join("");
+      if (name === "users") {
+        loadUsers();
+      }
 
-  if (!filtered.length) {
-    $("usersBody").innerHTML =
-      '<tr><td colspan="4">کاربری برای نمایش پیدا نشد.</td></tr>';
-  }
-}
+      // صفحه را به بالا برگردان، بدون تغییر اندازه یا زوم.
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
 
-async function navigate(page) {
-  $("usersPanel").classList.add("hidden");
-  $("pageTitle").textContent = "";
-  $("pageInfo").textContent = "";
+    async function verifyAdmin(user) {
+      const { data, error } = await db
+        .from("admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-  const pages = {
-    home:["نمای کلی","پنل مدیریت آکادمی طراحی سایت."],
-    users:["مدیریت کاربران","فهرست کاربران از Supabase دریافت می‌شود."],
-    orders:["سفارش‌ها","این بخش هنوز به جدول واقعی سفارش‌ها متصل نشده است."],
-    messages:["پیام‌ها","این بخش هنوز به جدول واقعی پیام‌ها متصل نشده است."],
-    managers:["مدیریت مدیران","افزودن مدیر باید با کنترل دسترسی سمت پایگاه داده پیاده‌سازی شود."],
-    settings:["تنظیمات","از دکمهٔ بالای صفحه برای تغییر حالت استفاده کن."]
-  };
+      if (error) {
+        throw new Error(
+          "بررسی دسترسی مدیر ناموفق بود: " + error.message
+        );
+      }
 
-  const info = pages[page] || pages.home;
-  $("pageTitle").textContent = info[0];
-  $("pageInfo").textContent = info[1];
+      if (!data) {
+        throw new Error(
+          "این حساب در جدول admins ثبت نشده است."
+        );
+      }
 
-  if (page === "users") {
-    $("usersPanel").classList.remove("hidden");
-    await loadUsers();
-  }
-}
+      return true;
+    }
 
-$("loginForm").addEventListener("submit", login);
-$("refreshUsers").addEventListener("click", loadUsers);
-$("userSearch").addEventListener("input", renderUsers);
+    async function openDashboard(user) {
+      try {
+        await verifyAdmin(user);
 
-document.querySelectorAll("[data-page]").forEach(button => {
-  button.addEventListener("click", () => navigate(button.dataset.page));
-});
+        currentUser = user;
+        $("loginScreen").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        $("welcome").textContent = user.email || "مدیر";
+        $("connectionStat").textContent = "متصل";
+        $("connectionStat").style.color = "var(--success)";
 
-$("themeBtn").addEventListener("click", () => {
-  document.documentElement.classList.toggle("light");
-});
+        showSection("dashboard");
+      } catch (error) {
+        $("loginScreen").classList.remove("hidden");
+        $("app").classList.add("hidden");
+        setMessage("loginMessage", error.message, "error");
+        await db.auth.signOut();
+      }
+    }
 
-$("logoutBtn").addEventListener("click", async () => {
-  await db.auth.signOut();
-  showLogin();
-  setStatus("از حساب خارج شدی.");
-});
+    $("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
 
-(async function restoreSession() {
-  const {data, error} = await db.auth.getSession();
-  if (error || !data.session) return;
+      const button = $("loginBtn");
+      button.disabled = true;
+      button.textContent = "در حال ورود...";
+      setMessage("loginMessage", "");
 
-  try {
-    await verifyAdmin(data.session.user);
-    showApp(data.session.user);
-  } catch (err) {
-    await db.auth.signOut();
-    setStatus(err.message);
-  }
-})();
-</script>
-</body>
-</html>
+      try {
+        const email = $("email").value.trim();
+        const password = $("password").value;
+
+        const { data, error } = await db.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+        if (!data.user) throw new Error("حساب کاربری دریافت نشد.");
+
+        await openDashboard(data.user);
+      } catch (error) {
+        setMessage(
+          "loginMessage",
+          "ورود ناموفق بود: " + error.message,
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = "ورود امن";
+      }
+    });
+
+    async function loadUsers() {
+      const body = $("usersBody");
+      const message = $("usersMessage");
+
+      body.innerHTML =
+        '<tr><td colspan="4" class="empty">در حال دریافت کاربران...</td></tr>';
+
+      message.textContent = "";
+      message.className = "";
+
+      try {
+        if (!currentUser) {
+          throw new Error("ابتدا وارد حساب مدیر شو.");
+        }
+
+        const { data, error } = await db.rpc("admin_registered_users");
+
+        if (error) throw error;
+
+        allUsers = Array.isArray(data) ? data : [];
+        $("userCount").textContent = String(allUsers.length);
+        renderUsers();
+      } catch (error) {
+        allUsers = [];
+        body.innerHTML =
+          '<tr><td colspan="4" class="empty">دریافت کاربران ناموفق بود.</td></tr>';
+
+        setMessage(
+          "usersMessage",
+          "خطا در دریافت کاربران: " + error.message,
+          "error"
+        );
+      }
+    }
+
+    function renderUsers() {
+      const query = $("userSearch").value.trim().toLowerCase();
+
+      const filtered = allUsers.filter((user) => {
+        const email = String(user.email || "").toLowerCase();
+        const name = String(user.full_name || "").toLowerCase();
+        return email.includes(query) || name.includes(query);
+      });
+
+      const body = $("usersBody");
+      body.replaceChildren();
+
+      if (filtered.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.className = "empty";
+        td.textContent = query
+          ? "کاربری مطابق جست‌وجو پیدا نشد."
+          : "هنوز کاربری برای نمایش وجود ندارد.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+      }
+
+      filtered.forEach((user, index) => {
+        const tr = document.createElement("tr");
+
+        const date = user.created_at
+          ? new Date(user.created_at).toLocaleDateString("fa-IR")
+          : "—";
+
+        [
+          String(index + 1),
+          user.full_name || "—",
+          user.email || "—",
+        
